@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://threads-fe-h0qx.onrender.com",
     methods: ["GET", "POST"],
   },
 });
@@ -21,9 +21,14 @@ const userSocketMap = {};
 
 io.on("connection", (socket) => {
   console.log("user connected", socket.id);
+
   const userId = socket.handshake.query.userId;
 
-  if (userId != "undefined") userSocketMap[userId] = socket.id;
+  if (userId && userId !== "undefined") {
+    userSocketMap[userId] = socket.id;
+    socket.userId = userId; // ✅ Store on socket instance
+  }
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("markMessagesAsSeen", async ({ conversationId, userId }) => {
@@ -38,14 +43,18 @@ io.on("connection", (socket) => {
       );
       io.to(userSocketMap[userId]).emit("messagesSeen", { conversationId });
     } catch (error) {
-      console.error(error);
+      console.error("Error in markMessagesAsSeen:", error);
     }
   });
 
   socket.on("disconnect", () => {
-    delete userSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    if (socket.userId) {
+      delete userSocketMap[socket.userId]; // ✅ Proper cleanup
+      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    }
+    console.log("user disconnected", socket.id);
   });
 });
+
 
 export { io, server, app };
