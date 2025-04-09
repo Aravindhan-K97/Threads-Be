@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://threads-fe-h0qx.onrender.com",
+    origin: "https://threads-61.netlify.app/",
     methods: ["GET", "POST"],
   },
 });
